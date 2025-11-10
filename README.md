@@ -1,16 +1,15 @@
 # Moteur de Calcul des Tables de Mortalité et d’Espérance de Vie  
 **Application Web pour l’Assurance-Vie**  
-*Projet académique – Examen d’Ingénierie des Logiciels III*  
-*NDACAYISABA Béatrice – Matricule 17/05026 – Master II Actuariat & Finance*  
-*Université du Burundi – Institut de Statistique et de la Recherche Scientifique Appliquée*  
-*Année académique 2024-2025*  
-*Professeur : Dr NIBIGIRA Nadine*
+
+*NDACAYISABA Béatrice – Matricule 17/05026 *  
+*Université du Burundi – Institut de Statistique Appliquée*  
+
 
 ---
 
 ## Aperçu du projet
 
-Ce dépôt contient le **code source complet** d’un **moteur de calcul automatisé des tables de mortalité et de l’espérance de vie**, développé dans le cadre de l’examen d’**Ingénierie des Logiciels III**.  
+Ce dépôt contient le **code source complet** d’un **moteur de calcul automatisé des tables de mortalité et de l’espérance de vie**.  
 L’application permet de générer des tables actuarielles à partir de **cinq modèles reconnus** (Lee-Carter, Gompertz, Makeham, Heligman-Lorenz, Coale-Demeny), d’afficher les résultats sous forme de tableaux et graphiques interactifs, d’exporter en Excel, et de gérer un historique utilisateur avec pagination, filtres et tri.
 
 > **Objectif pédagogique** : Concevoir, développer, tester et documenter un logiciel actuariel robuste, reproductible et évolutif.
