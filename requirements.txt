@@ -1,0 +1,5 @@
+Flask==2.3.2
+flask-session==0.4.0
+openpyxl==3.0.10
+numpy==1.24.3
+sqlite3

@@ -1,0 +1,35 @@
+:root {
+    --primary-color: #1e3a8a;
+    --secondary-color: #9333ea;
+    --accent-color: #10b981;
+    --background-color: #f9fafb;
+    --text-color: #1f2937;
+    --border-color: #d1d5db;
+}
+
+.header {
+    @apply bg-gradient-to-r from-blue-900 to-indigo-700 text-white p-4 rounded-t-xl;
+}
+
+.card {
+    @apply bg-white rounded-xl shadow-md p-6 transition-all duration-300 hover:shadow-lg;
+}
+
+.btn {
+    @apply bg-indigo-600 text-white py-2 px-5 rounded-lg hover:bg-indigo-700 transition duration-200 font-medium;
+}
+
+.btn-download {
+    @apply bg-green-600 hover:bg-green-700;
+}
+
+.custom-focus {
+    @apply border-indigo-600 ring-indigo-200;
+}
+
+@media (max-width: 640px) {
+    .card { @apply p-4; }
+    .btn { @apply w-full; }
+    .flex { @apply flex-col space-y-4; }
+    .space-x-4 { @apply space-x-0; }
+}

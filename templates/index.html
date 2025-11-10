@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Moteur de Calcul des Tables de Mortalité</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-gray-50 font-sans text-gray-800">
+    <div class="container mx-auto p-6 max-w-7xl">
+        <div class="flex justify-between items-center mb-8">
+            <h1 class="text-4xl font-bold text-indigo-800">Tables de Mortalité & Espérance de Vie</h1>
+            <a href="/logout" class="bg-red-600 text-white px-5 py-2 rounded-lg hover:bg-red-700 transition">Déconnexion</a>
+        </div>
+
+        <!-- Formulaire -->
+        <div class="bg-white p-6 rounded-xl shadow-md mb-6">
+            <form id="mortalityForm" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Âge de départ</label>
+                    <input type="number" id="start_age" min="0" value="0" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Dernier âge</label>
+                    <input type="number" id="end_age" min="1" value="92" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Population initiale</label>
+                    <input type="number" id="population" min="1" value="1000" step="1" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Facteur d'ajustement (racine)</label>
+                    <input type="number" id="root" min="0.1" value="1.0" step="0.1" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Modèle actuariel</label>
+                    <select id="model" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                        <option value="lee_carter">Lee-Carter</option>
+                        <option value="makeham">Makeham</option>
+                        <option value="gompertz">Gompertz</option>
+                        <option value="heligman_lorenz">Heligman-Lorenz</option>
+                        <option value="coale_demeny">Coale-Demeny</option>
+                    </select>
+                </div>
+                <div class="flex items-end space-x-3">
+                    <button type="submit" class="bg-indigo-600 text-white px-5 py-2 rounded-lg hover:bg-indigo-700 transition font-medium">Calculer Table</button>
+                    <button type="button" id="lifeExpectancyBtn" class="bg-green-600 text-white px-5 py-2 rounded-lg hover:bg-green-700 transition font-medium">Espérance de Vie</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Résultats -->
+        <div id="resultContainer" class="bg-white p-6 rounded-xl shadow-md mb-6 hidden">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">Table de Mortalité</h2>
+            <div class="overflow-x-auto">
+                <table class="min-w-full table-auto border-collapse">
+                    <thead class="bg-indigo-100">
+                        <tr>
+                            <th class="px-4 py-2 text-left text-sm font-semibold text-gray-700">Âge</th>
+                            <th class="px-4 py-2 text-left text-sm font-semibold text-gray-700">Lx</th>
+                            <th class="px-4 py-2 text-left text-sm font-semibold text-gray-700">Dx</th>
+                            <th class="px-4 py-2 text-left text-sm font-semibold text-gray-700">qx</th>
+                            <th class="px-4 py-2 text-left text-sm font-semibold text-gray-700">px</th>
+                        </tr>
+                    </thead>
+                    <tbody id="resultsTable" class="text-sm"></tbody>
+                </table>
+            </div>
+            <button id="downloadBtn" class="mt-4 bg-yellow-600 text-white px-5 py-2 rounded-lg hover:bg-yellow-700 transition hidden">Télécharger Excel</button>
+        </div>
+
+        <!-- Espérance de vie -->
+        <div id="lifeExpectancyContainer" class="bg-green-50 border border-green-200 p-4 rounded-xl mb-6 hidden">
+            <h2 class="text-xl font-bold text-green-800">Espérance de vie à la naissance</h2>
+            <p id="lifeExpectancyResult" class="text-3xl font-bold text-green-700 mt-2"></p>
+        </div>
+
+        <!-- Graphique -->
+        <div id="chartContainer" class="bg-white p-6 rounded-xl shadow-md mb-6 hidden">
+            <h2 class="text-xl font-bold text-gray-800 mb-4">Évolution des Probabilités</h2>
+            <canvas id="mortalityChart"></canvas>
+        </div>
+
+        <!-- Historique -->
+        <div class="bg-white p-6 rounded-xl shadow-md">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">Historique des Calculs</h2>
+            <div class="flex flex-wrap gap-2 mb-4">
+                <select id="filterModel" class="border rounded px-3 py-1">
+                    <option value="">Tous les modèles</option>
+                    <option value="lee_carter">Lee-Carter</option>
+                    <option value="makeham">Makeham</option>
+                    <option value="gompertz">Gompertz</option>
+                    <option value="heligman_lorenz">Heligman-Lorenz</option>
+                    <option value="coale_demeny">Coale-Demeny</option>
+                </select>
+                <button id="loadHistoryBtn" class="bg-indigo-600 text-white px-4 py-1 rounded hover:bg-indigo-700">Actualiser</button>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full table-auto border-collapse">
+                    <thead class="bg-gray-100">
+                        <tr>
+                            <th class="border px-3 py-2 text-left text-xs font-medium text-gray-700">Date</th>
+                            <th class="border px-3 py-2 text-left text-xs font-medium text-gray-700">Type</th>
+                            <th class="border px-3 py-2 text-left text-xs font-medium text-gray-700">Modèle</th>
+                            <th class="border px-3 py-2 text-left text-xs font-medium text-gray-700">Âge Début/Fin</th>
+                            <th class="border px-3 py-2 text-left text-xs font-medium text-gray-700">Population</th>
+                            <th class="border px-3 py-2 text-left text-xs font-medium text-gray-700">Racine</th>
+                            <th class="border px-3 py-2 text-left text-xs font-medium text-gray-700">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historyBody" class="text-xs"></tbody>
+                </table>
+            </div>
+            <div id="pagination" class="mt-4 flex justify-center items-center space-x-2">
+                <button id="prevPage" class="bg-gray-300 px-3 py-1 rounded hover:bg-gray-400 disabled:opacity-50" disabled>Précédent</button>
+                <span id="pageInfo" class="text-sm"></span>
+                <button id="nextPage" class="bg-gray-300 px-3 py-1 rounded hover:bg-gray-400 disabled:opacity-50" disabled>Suivant</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentPage = 1;
+        const perPage = 5;
+
+        // --- Calcul Table ---
+        document.getElementById('mortalityForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const params = new URLSearchParams({
+                start_age: document.getElementById('start_age').value,
+                end_age: document.getElementById('end_age').value,
+                population: document.getElementById('population').value,
+                model: document.getElementById('model').value,
+                root: document.getElementById('root').value
+            });
+
+            const res = await fetch(`/calculate_mortality?${params}`);
+            const data = await res.json();
+            if (data.error) return alert(data.error);
+
+            displayTable(data);
+            plotChart(data);
+            document.getElementById('downloadBtn').onclick = () => downloadExcel(params);
+            document.getElementById('downloadBtn').classList.remove('hidden');
+            document.getElementById('resultContainer').classList.remove('hidden');
+        });
+
+        // --- Espérance de vie ---
+        document.getElementById('lifeExpectancyBtn').addEventListener('click', async () => {
+            const params = new URLSearchParams({
+                start_age: document.getElementById('start_age').value,
+                end_age: document.getElementById('end_age').value,
+                population: document.getElementById('population').value,
+                model: document.getElementById('model').value,
+                root: document.getElementById('root').value
+            });
+
+            const res = await fetch(`/calculate_life_expectancy?${params}`);
+            const data = await res.json();
+            if (data.error) return alert(data.error);
+
+            document.getElementById('lifeExpectancyResult').textContent = `${data.life_expectancy} ans`;
+            document.getElementById('lifeExpectancyContainer').classList.remove('hidden');
+        });
+
+        // --- Téléchargement Excel ---
+        function downloadExcel(params) {
+            window.location.href = `/download_xlsx?${params}`;
+        }
+
+        // --- Affichage du tableau ---
+        function displayTable(data) {
+            const tbody = document.getElementById('resultsTable');
+            tbody.innerHTML = '';
+            data.forEach(row => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="border px-4 py-1">${row.age}</td>
+                    <td class="border px-4 py-1">${row.lx}</td>
+                    <td class="border px-4 py-1">${row.dx}</td>
+                    <td class="border px-4 py-1">${row.qx}</td>
+                    <td class="border px-4 py-1">${row.px}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // --- Graphique ---
+        function plotChart(data) {
+            const ctx = document.getElementById('mortalityChart').getContext('2d');
+            if (window.myChart) window.myChart.destroy();
+            window.myChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.map(d => d.age),
+                    datasets: [
+                        { label: 'qx (Décès)', data: data.map(d => d.qx), borderColor: '#ef4444', fill: false },
+                        { label: 'px (Survie)', data: data.map(d => d.px), borderColor: '#10b981', fill: false }
+                    ]
+                },
+                options: { responsive: true, scales: { y: { beginAtZero: true, max: 1 } } }
+            });
+            document.getElementById('chartContainer').classList.remove('hidden');
+        }
+
+        // --- Historique ---
+        document.getElementById('loadHistoryBtn').addEventListener('click', loadHistory);
+        document.getElementById('prevPage').addEventListener('click', () => { if (currentPage > 1) { currentPage--; loadHistory(); } });
+        document.getElementById('nextPage').addEventListener('click', () => { currentPage++; loadHistory(); });
+
+        async function loadHistory() {
+            const filter = document.getElementById('filterModel').value;
+            const url = `/history?page=${currentPage}&per_page=${perPage}&filter_model=${filter}`;
+            const res = await fetch(url);
+            const history = await res.json();
+
+            const tbody = document.getElementById('historyBody');
+            tbody.innerHTML = '';
+            history.data.forEach(entry => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="border px-3 py-1">${entry.timestamp}</td>
+                    <td class="border px-3 py-1">${entry.calculation_type}</td>
+                    <td class="border px-3 py-1">${entry.model}</td>
+                    <td class="border px-3 py-1">${entry.start_age} → ${entry.end_age}</td>
+                    <td class="border px-3 py-1">${entry.population}</td>
+                    <td class="border px-3 py-1">${entry.root}</td>
+                    <td class="border px-3 py-1">
+                        <button class="bg-red-500 text-white text-xs px-2 py-1 rounded delete-btn" data-id="${entry.id}">Supprimer</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            document.getElementById('pageInfo').textContent = `Page ${history.current_page} / ${history.total_pages}`;
+            document.getElementById('prevPage').disabled = currentPage === 1;
+            document.getElementById('nextPage').disabled = currentPage === history.total_pages;
+
+            document.querySelectorAll('.delete-btn').forEach(btn => {
+                btn.onclick = async () => {
+                    if (confirm('Supprimer cette entrée ?')) {
+                        await fetch('/delete_history', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ id: btn.dataset.id })
+                        });
+                        loadHistory();
+                    }
+                };
+            });
+        }
+
+        // Charger l'historique au démarrage
+        loadHistory();
+    </script>
+</body>
+</html>
