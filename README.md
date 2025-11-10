@@ -42,7 +42,7 @@ L’application permet de générer des tables actuarielles à partir de **cinq 
 | **Base de données** | SQLite (léger, embarqué) |
 | **Export** | openpyxl 3.1.2 |
 | **Frontend** | HTML5, Tailwind CSS 3.4, Chart.js 4.4.0 |
-| **Déploiement local** | `python app.py` |
+| **Déploiement local** | `python backend.py` |
 
 ---
 
@@ -62,4 +62,4 @@ source venv/bin/activate  # Linux/Mac
 pip install -r requirements.txt
 
 # 4. Lancer l’application
-python app.py
+python backend.py
